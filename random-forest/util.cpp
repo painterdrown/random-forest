@@ -14,3 +14,7 @@ string now(void) {
 void rf_log(string msg) {
 	printf("[%s] %s\n", now().c_str(), msg.c_str());
 }
+
+int rand(const int begin, const int end) {
+	return rand() % (end - begin) + begin;
+}
