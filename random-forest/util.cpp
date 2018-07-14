@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "util.h"
 
+#define FEATURE_TOTAL 201
+
 string now(void) {
 	struct tm t;
 	time_t n;
@@ -17,4 +19,71 @@ void rf_log(string msg) {
 
 int rand(const int begin, const int end) {
 	return rand() % (end - begin) + begin;
+}
+
+Sample parse_train_line(const string &line) {
+	stringstream ss(line);
+	Sample sample;
+	sample.x.resize(FEATURE_TOTAL);
+	ss >> sample.y;
+	while (ss) {
+		int index;
+		float value;
+		char _;
+		ss >> index >> _ >> value;
+		sample.x[index-1] = value;
+	}
+	return sample;
+}
+
+vector<Sample> read_train_data(const char *path) {
+	ifstream ifs(path);
+	string line;
+	vector<Sample> train_samples;
+	int count = 0;  // dev
+	while (getline(ifs, line)) {
+		auto sample = parse_train_line(line);
+		train_samples.push_back(sample);
+		count++;
+		if (count == 20000) break;  //dev
+	}
+	ifs.close();
+	return train_samples;
+}
+
+X parse_test_line(const string &line) {
+	stringstream ss(line);
+	int _;
+	X x;
+	x.resize(FEATURE_TOTAL);
+	ss >> _;
+	while (ss) {
+		int index;
+		float value;
+		char _;
+		ss >> index >> _ >> value;
+		x[index-1] = value;
+	}
+	return x;
+}
+
+vector<X> read_test_data(const char *path) {
+	ifstream ifs(path);
+	string line;
+	vector<X> test_x;
+	while (getline(ifs, line)) {
+		auto x = parse_test_line(line);
+		test_x.push_back(x);
+	}
+	ifs.close();
+	return test_x;
+}
+
+void write_predict_data(const vector<Y> &test_y, const char *path) {
+	ofstream ofs(path);
+	ofs << "id,label\n";
+	for (int i = 0; i < test_y.size(); ++i) {
+		ofs << i << ',' << test_y[i] << '\n';
+	}
+	ofs.close();
 }

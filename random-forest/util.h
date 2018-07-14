@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <vector>
 #include <string>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -20,3 +23,13 @@ string now(void);
 void rf_log(string msg);
 
 int rand(const int begin, const int end);
+
+Sample parse_train_line(const string &line);
+
+vector<Sample> read_train_data(const char *path);
+
+X parse_test_line(const string &line);
+
+vector<X> read_test_data(const char *path);
+
+void write_predict_data(const vector<Y> &test_y, const char *path);

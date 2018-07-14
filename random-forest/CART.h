@@ -9,9 +9,6 @@ struct Node {
 	int feature;
 	Y value;
 	float split_point;
-	float info_gain;
-	int sample_num;
-	int level;
 	Node *left;
 	Node *right;
 
@@ -19,17 +16,24 @@ struct Node {
 		feature = -1;
 		value = false;
 		split_point = 0.0f;
-		info_gain = 0.0f;
-		sample_num = 0;
-		level = 0;
 		left = NULL;
 		right = NULL;
+	}
+
+	bool is_leaf() const {
+		return left == NULL && right == NULL;
 	}
 };
 
 struct CART {
 	Node *root;
 
+	// constructor
+	CART() {
+		root = NULL;
+	}
+
+	// classify
 	Y classify(const X &x) const {
 		Node *node = root;
 		while (!node->left || !node->right) {  // while not a leaf node
