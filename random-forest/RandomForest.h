@@ -24,7 +24,7 @@ public:
 
 	// public methods
 	void train(const vector<Sample> &train_samples);
-	Y predict(const X &x);
+	float predict(const X &x);
 
 private:
 	// data
@@ -39,6 +39,6 @@ private:
 	CART generate_cart(vector<Sample*> &samples, vector<int> &features);
 	void split_node_recursively(vector<Sample*> &samples, vector<int> &features, Node *&node, const int depth);
 	tuple<float, float> find_split(vector<Sample*> &samples, const int feature);
-	float compute_gini(const vector<Sample*> &samples);
+	float compute_variance(const vector<Sample*> &samples);
 	void sort_on_feature(vector<Sample*> &samples, const int feature);
 };

@@ -7,7 +7,7 @@ using namespace std;
 
 struct Node {
 	int feature;
-	Y value;
+	float value;
 	float split_point;
 	Node *left;
 	Node *right;
@@ -34,7 +34,7 @@ struct CART {
 	}
 
 	// classify
-	Y classify(const X &x) const {
+	float classify(const X &x) const {
 		Node *node = root;
 		while (!node->is_leaf()) {  // while not a leaf node
 			if (node->left == NULL) node = node->right;

@@ -15,17 +15,14 @@ void RandomForest::train(const vector<Sample> &train_samples) {
 	}
 }
 
-Y RandomForest::predict(const X &x) {
-	int positive_votes = 0;
-	int negative_votes = 0;
+float RandomForest::predict(const X &x) {
+	float p = 0;
 
 	for (const auto &cart : carts) {
-		Y vote = cart.classify(x);
-		if (vote) ++positive_votes;
-		else ++negative_votes;
+		p += cart.classify(x);
 	}
 
-	return positive_votes > negative_votes;
+	return p / tree_num;
 }
 
 vector<Sample*> RandomForest::random_select_samples(void) {
@@ -55,15 +52,13 @@ vector<int> RandomForest::random_select_features(void) {
 	return features;
 }
 
-float RandomForest::compute_gini(const vector<Sample*> &samples) {
-	int positive_count = 0;
-	for (const auto &sample : samples) {
-		if (sample->y) ++positive_count;
-	}
-	float p1 = (float)positive_count / samples.size();
-	float p0 = 1.0f - p1;
-	float gini = 1.0f - pow(p0, 2) - pow(p1, 2);
-	return gini;
+float RandomForest::compute_variance(const vector<Sample*> &samples) {
+	int t = samples.size();
+	int p = 0;
+	for (const auto &sample : samples) if (sample->y) ++p;
+	float mean = (float)p / t;
+	float variance = (float)p / t * pow(1 - mean, 2) + (float)(t - p) / t * pow(0 - mean, 2);
+	return variance;
 }
 
 void RandomForest::split_node_recursively(vector<Sample*> &samples, vector<int> &features, Node *&node, const int depth) {
@@ -71,20 +66,20 @@ void RandomForest::split_node_recursively(vector<Sample*> &samples, vector<int> 
 	if (samples.size() < node_sample_num_threshold) return;
 	
 	// compute current node gini
-	float current_gini = compute_gini(samples);
+	float current_variance = compute_variance(samples);
 
-	// find the feature with smallest gini
+	// find the feature with smallest variance
 	float best_split_point = 0.0f;
-	float min_gini = current_gini;
+	float min_variance = current_variance;
 	int min_index = -1;
 	for (int i = 0; i < features.size(); ++i) {
 		int feature = features[i];
 		if (feature == -1) continue;
 		auto split_info = find_split(samples, feature);
 		float split_point = get<0>(split_info);
-		float gini = get<1>(split_info);
-		if (gini < min_gini) {
-			min_gini = gini;
+		float variance = get<1>(split_info);
+		if (variance < min_variance) {
+			min_variance = variance;
 			min_index = i;
 			best_split_point = split_point;
 		}
@@ -97,7 +92,7 @@ void RandomForest::split_node_recursively(vector<Sample*> &samples, vector<int> 
 	Node *test = carts[0].root;
 	node->feature = features[min_index];
 	node->split_point = best_split_point;
-	sprintf_s(rf_log, "split node: feature=%d\tsplit_point=%f\tdepth=%d\tGINI: %f -> %f", features[min_index], best_split_point, depth+1, current_gini, min_gini); log(rf_log);
+	sprintf_s(rf_log, "split node: feature=%d\tsplit_point=%f\tdepth=%d\tvariance: %f -> %f", features[min_index], best_split_point, depth+1, current_variance, min_variance); log(rf_log);
 	
 	// split left and right nodes
 	vector<Sample*> l_samples, r_samples;
@@ -111,41 +106,40 @@ void RandomForest::split_node_recursively(vector<Sample*> &samples, vector<int> 
 	
 	// leaf node
 	if (node->is_leaf()) {
-		int positive_count = 0;
-		int negative_count = 0;
-		for (const auto &sample : samples) {
-			if (sample->y) ++positive_count;
-			else ++negative_count;
-		}
-		node->value = positive_count > negative_count;
+		int p = 0;
+		for (const auto &sample : samples) if (sample->y) ++p;
+		node->value =  (float)p / samples.size();
 	}
 }
 
 tuple<float, float> RandomForest::find_split(vector<Sample*> &samples, const int feature) {
 	sort_on_feature(samples, feature);
-	int positive_total = 0;
-	for (const auto &sample : samples) positive_total += sample->y ? 1 : 0;
-	int positive_count1 = 0;
-	int positive_count2 = positive_total - positive_count1;
-	float min_gini = 1.0f;
+	int t = samples.size();
+	int p = 0;
+	for (const auto &sample : samples) p += sample->y ? 1 : 0;
+	int p1 = 0;
+	int p2 = p - p1;
+	float min_variance = 1.0f;
 	int min_index = -1;
 	float best_split_point = 0.0f;
 	for (int i = 0; i < samples.size() - 1; ++i) {
 		float split_point = (samples[i]->x[feature] + samples[i + 1]->x[feature]) / 2;
-		int total1 = i + 1;
-		int total2 = samples.size() - total1;
-		positive_count1 += samples[i]->y ? 1 : 0;
-		positive_count2 = positive_total - positive_count1;
-		float gini1 = 1 - pow((float)positive_count1 / total1, 2) - pow(float(total1 - positive_count1) / total1, 2);
-		float gini2 = 1 - pow((float)positive_count2 / total2, 2) - pow(float(total2 - positive_count2) / total2, 2);
-		float gini = (float)total1 / samples.size() * gini1 + (float)total2 / samples.size() * gini2;
-		if (gini < min_gini) {
-			min_gini = gini;
+		int t1 = i + 1;
+		int t2 = t - t1;
+		p1 += samples[i]->y ? 1 : 0;
+		p2 = p - p1;
+		float mean1 = (float)p1 / t1;
+		float mean2 = (float)p2 / t2;
+		float variance1 = (float)p1 / t1 * pow(1 - mean1, 2) + (float)(t1 - p1) / t1 * pow(0 - mean1, 2);
+		float variance2 = (float)p2 / t2 * pow(1 - mean2, 2) + (float)(t2 - p2) / t2 * pow(0 - mean2, 2);
+		float variance = (float)t1 / t * variance1 + (float)t2 / t * variance2;
+		if (variance < min_variance) {
+			min_variance = variance;
 			min_index = i;
 			best_split_point = split_point;
 		}
 	}
-	return make_tuple(best_split_point, min_gini);
+	return make_tuple(best_split_point, min_variance);
 }
 
 CART RandomForest::generate_cart(vector<Sample*> &samples, vector<int> &features) {

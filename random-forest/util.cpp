@@ -48,7 +48,6 @@ vector<Sample> read_train_data(const char *path) {
 		if (count % 10000 == 0) {
 			sprintf_s(util_log, "%d train samples are read", count); log(util_log);
 		}
-		if (count == 20000) break;  //dev
 	}
 	sprintf_s(util_log, "%d train samples are read totally", count); log(util_log);
 	ifs.close();
@@ -83,14 +82,13 @@ vector<X> read_test_data(const char *path) {
 		if (count % 10000 == 0) {
 			sprintf_s(util_log, "%d test samples are read", count); log(util_log);
 		}
-		if (count == 10000) break;  //dev
 	}
 	sprintf_s(util_log, "%d test samples are read totally", count); log(util_log);
 	ifs.close();
 	return test_x;
 }
 
-void write_predict_data(const vector<Y> &test_y, const char *path) {
+void write_predict_data(const vector<float> &test_y, const char *path) {
 	ofstream ofs(path);
 	ofs << "id,label\n";
 	for (int i = 0; i < test_y.size(); ++i) {

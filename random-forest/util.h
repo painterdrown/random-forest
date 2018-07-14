@@ -34,4 +34,4 @@ X parse_test_line(const string &line);
 
 vector<X> read_test_data(const char *path);
 
-void write_predict_data(const vector<Y> &test_y, const char *path);
+void write_predict_data(const vector<float> &test_y, const char *path);
