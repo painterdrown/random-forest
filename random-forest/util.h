@@ -9,6 +9,8 @@
 #include <fstream>
 #include <sstream>
 
+#define FEATURE_TOTAL 201
+
 using namespace std;
 
 typedef vector<float> X;
@@ -20,7 +22,7 @@ typedef struct {
 
 string now(void);
 
-void rf_log(string msg);
+void log(const char *log_msg);
 
 int rand(const int begin, const int end);
 

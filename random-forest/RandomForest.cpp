@@ -1,15 +1,17 @@
 #include "stdafx.h"
 #include "RandomForest.h"
 
+char rf_log[256];
+
 void RandomForest::train(const vector<Sample> &train_samples) {
 	this->train_samples = train_samples;
 
 	carts.resize(tree_num);
 	for (int i = 0; i < tree_num; ++i) {
+		sprintf_s(rf_log, "begin to train CART #%d", i + 1); log(rf_log);
 		auto samples = random_select_samples();
 		auto features = random_select_features();
-		auto cart = generate_cart(samples, features);
-		carts.push_back(cart);
+		carts[i] = generate_cart(samples, features);
 	}
 }
 
@@ -72,7 +74,7 @@ void RandomForest::split_node_recursively(vector<Sample*> &samples, vector<int> 
 	float current_gini = compute_gini(samples);
 
 	// find the feature with smallest gini
-	Node splited_node;
+	float best_split_point = 0.0f;
 	float min_gini = current_gini;
 	int min_index = -1;
 	for (int i = 0; i < features.size(); ++i) {
@@ -82,22 +84,41 @@ void RandomForest::split_node_recursively(vector<Sample*> &samples, vector<int> 
 		float split_point = get<0>(split_info);
 		float gini = get<1>(split_info);
 		if (gini < min_gini) {
-			splited_node.feature = feature;
-			splited_node.split_point = split_point;
+			min_gini = gini;
 			min_index = i;
+			best_split_point = split_point;
 		}
 	}
 
 	if (min_index == -1) return;
+
+	// split
+	node = new Node();
+	Node *test = carts[0].root;
+	node->feature = features[min_index];
+	node->split_point = best_split_point;
+	sprintf_s(rf_log, "split node: feature=%d\tsplit_point=%f\tdepth=%d\tGINI: %f -> %f", features[min_index], best_split_point, depth+1, current_gini, min_gini); log(rf_log);
+	
+	// split left and right nodes
 	vector<Sample*> l_samples, r_samples;
 	for (auto s : samples) {
-		if (s->x[splited_node.feature] <= splited_node.split_point) l_samples.push_back(s);
+		if (s->x[features[min_index]] <= best_split_point) l_samples.push_back(s);
 		else r_samples.push_back(s);
 	}
 	features[min_index] = -1;
-	split_node_recursively(l_samples, features, splited_node.left, depth + 1);
-	split_node_recursively(r_samples, features, splited_node.right, depth + 1);
-	node = &splited_node;
+	split_node_recursively(l_samples, features, node->left, depth + 1);
+	split_node_recursively(r_samples, features, node->right, depth + 1);
+	
+	// leaf node
+	if (node->is_leaf()) {
+		int positive_count = 0;
+		int negative_count = 0;
+		for (const auto &sample : samples) {
+			if (sample->y) ++positive_count;
+			else ++negative_count;
+		}
+		node->value = positive_count > negative_count;
+	}
 }
 
 tuple<float, float> RandomForest::find_split(vector<Sample*> &samples, const int feature) {

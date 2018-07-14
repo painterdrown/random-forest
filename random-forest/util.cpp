@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "util.h"
 
-#define FEATURE_TOTAL 201
+char util_log[256];
 
 string now(void) {
 	struct tm t;
@@ -13,8 +13,8 @@ string now(void) {
 	return result;
 }
 
-void rf_log(string msg) {
-	printf("[%s] %s\n", now().c_str(), msg.c_str());
+void log(const char *msg) {
+	printf("[%s] %s\n", now().c_str(), msg);
 }
 
 int rand(const int begin, const int end) {
@@ -40,13 +40,17 @@ vector<Sample> read_train_data(const char *path) {
 	ifstream ifs(path);
 	string line;
 	vector<Sample> train_samples;
-	int count = 0;  // dev
+	int count = 0;
 	while (getline(ifs, line)) {
 		auto sample = parse_train_line(line);
 		train_samples.push_back(sample);
 		count++;
+		if (count % 10000 == 0) {
+			sprintf_s(util_log, "%d train samples are read", count); log(util_log);
+		}
 		if (count == 20000) break;  //dev
 	}
+	sprintf_s(util_log, "%d train samples are read totally", count); log(util_log);
 	ifs.close();
 	return train_samples;
 }
@@ -71,10 +75,17 @@ vector<X> read_test_data(const char *path) {
 	ifstream ifs(path);
 	string line;
 	vector<X> test_x;
+	int count = 0;
 	while (getline(ifs, line)) {
 		auto x = parse_test_line(line);
 		test_x.push_back(x);
+		count++;
+		if (count % 10000 == 0) {
+			sprintf_s(util_log, "%d test samples are read", count); log(util_log);
+		}
+		if (count == 10000) break;  //dev
 	}
+	sprintf_s(util_log, "%d test samples are read totally", count); log(util_log);
 	ifs.close();
 	return test_x;
 }

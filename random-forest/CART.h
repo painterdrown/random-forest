@@ -36,8 +36,12 @@ struct CART {
 	// classify
 	Y classify(const X &x) const {
 		Node *node = root;
-		while (!node->left || !node->right) {  // while not a leaf node
-			node = x[node->feature] <= node->value ? node->left : node->right;
+		while (!node->is_leaf()) {  // while not a leaf node
+			if (node->left == NULL) node = node->right;
+			else if (node->right == NULL) node = node->left;
+			else {
+				node = x[node->feature] <= node->split_point ? node->left : node->right;
+			}
 		}
 		return node->value;
 	}
