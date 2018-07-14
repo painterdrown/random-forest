@@ -29,6 +29,8 @@ public:
 private:
 	// data
 	vector<Sample> train_samples;
+	vector<int> sample_indices;
+	vector<int> feature_indices;
 	
 	// models
 	vector<CART> carts;

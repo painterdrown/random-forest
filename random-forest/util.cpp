@@ -18,6 +18,8 @@ void log(const char *msg) {
 }
 
 int rand(const int begin, const int end) {
+	srand(time(NULL));
+
 	return rand() % (end - begin) + begin;
 }
 
@@ -95,4 +97,20 @@ void write_predict_data(const vector<float> &test_y, const char *path) {
 		ofs << i << ',' << test_y[i] << '\n';
 	}
 	ofs.close();
+}
+
+void shuffle(vector<int> &cards) {
+	srand(time(NULL));
+
+	int n = cards.size();
+	for (int i = 0; i < n; ++i) {
+		int index = rand() % (n - i) + i;
+		if (index != i) {
+			int tmp = cards[i];
+			cards[i] = cards[index];
+			cards[index] = tmp;
+		}
+
+	}
+
 }

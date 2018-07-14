@@ -6,6 +6,14 @@ char rf_log[256];
 void RandomForest::train(const vector<Sample> &train_samples) {
 	this->train_samples = train_samples;
 
+	// prepare for training
+	const int total = train_samples.size();
+	sample_indices.resize(total);
+	for (int i = 0; i < total; ++i) sample_indices[i] = i;
+	feature_indices.resize(feature_total);
+	for (int i = 0; i < feature_total; ++i) feature_indices[i] = i;
+	
+	// begin training CART
 	carts.resize(tree_num);
 	for (int i = 0; i < tree_num; ++i) {
 		sprintf_s(rf_log, "begin to train CART #%d", i + 1); log(rf_log);
@@ -27,28 +35,32 @@ float RandomForest::predict(const X &x) {
 
 vector<Sample*> RandomForest::random_select_samples(void) {
 	vector<Sample*> samples;
-	vector<int> samples_index;
-	const int train_samples_total = train_samples.size();
+
+	// shuffle
+	shuffle(sample_indices);
+
+	const int total = train_samples.size();
+	const int begin = rand(0, total);
 	for (int i = 0; i < random_sample_num; ++i) {
-		int r = rand(0, train_samples_total);
-		while (find(samples_index.begin(), samples_index.end(), r) != samples_index.end()) {
-			r = rand(0, train_samples_total);
-		}
-		samples.push_back(&train_samples[r]);
-		samples_index.push_back(r);
+		int j = sample_indices[(begin + i) % total];
+		samples.push_back(&train_samples[j]);
 	}
+
 	return samples;
 }
 
 vector<int> RandomForest::random_select_features(void) {
 	vector<int> features;
+
+	// shuffle
+	shuffle(feature_indices);
+
+	const int begin = rand(0, feature_total);
 	for (int i = 0; i < random_feature_num; ++i) {
-		int r = rand(0, feature_total);
-		while (find(features.begin(), features.end(), r) != features.end()) {
-			r = rand(0, feature_total);
-		}
-		features.push_back(r);
+		int j = feature_indices[(begin + i) % feature_total];
+		features.push_back(j);
 	}
+
 	return features;
 }
 
