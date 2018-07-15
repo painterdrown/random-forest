@@ -204,3 +204,39 @@ private:
 ![](images/s/find_split_profile.png)
 
 ![](images/s/split_node_recursively_profile.png)
+
+### 2.2. 并行优化
+
+并行化分析：
+
+1. 随机森林最大的特点就是 CART 之间是两两独立的，所以并行化的第一个思路就是并行地生成每一颗 CART。
+2. 另外，在生成每一颗 CART 的过程中，每个特征找最佳分割点的过程，也可以并行化。
+
+#### 2.2.1. 并行生成 CART
+
+```C++
+omp_set_num_threads(4);
+#pragma omp parallel for
+for (int i = 0; i < tree_num; ++i) {
+  sprintf_s(rf_log, "CART #%d begin to train in thread #%d", i + 1, omp_get_thread_num()); log(rf_log);
+  auto samples = random_select_samples();
+  auto features = random_select_features();
+  carts[i] = generate_cart(i + 1, samples, features);
+}
+```
+
+开始训练，这里对比一下非并行化版本、omp_set_num_threads(4) 和 omp_set_num_threads(8) 的区别：
+
+![](images/s/train_cpu.png)
+
+![](images/p/train_thread_4_cpu.png)
+
+![](images/p/train_thread_8_cpu.png)
+
+![](images/s/train_cpu.png)
+
+![](images/p/train_thread_4_profile.png)
+
+![](images/p/train_thread_8_profile.png)
+
+#### 2.2.2. 并行寻找最佳分割点

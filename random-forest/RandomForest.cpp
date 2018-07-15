@@ -12,14 +12,17 @@ void RandomForest::train(const vector<Sample> &train_samples) {
 	for (int i = 0; i < total; ++i) sample_indices[i] = i;
 	feature_indices.resize(feature_total);
 	for (int i = 0; i < feature_total; ++i) feature_indices[i] = i;
-	
+
 	// begin training CART
-	carts.resize(tree_num);
+	carts.resize(4);
+
+	omp_set_num_threads(8);
+	#pragma omp parallel for
 	for (int i = 0; i < tree_num; ++i) {
-		sprintf_s(rf_log, "begin to train CART #%d", i + 1); log(rf_log);
+		sprintf_s(rf_log, "CART #%d begin to train in thread #%d", i + 1, omp_get_thread_num()); log(rf_log);
 		auto samples = random_select_samples();
 		auto features = random_select_features();
-		carts[i] = generate_cart(samples, features);
+		carts[i] = generate_cart(i + 1, samples, features);
 	}
 }
 
@@ -73,7 +76,7 @@ float RandomForest::compute_variance(const vector<Sample*> &samples) {
 	return variance;
 }
 
-void RandomForest::split_node_recursively(vector<Sample*> &samples, vector<int> &features, Node *&node, const int depth) {
+void RandomForest::split_node_recursively(const int cart_no, vector<Sample*> &samples, vector<int> &features, Node *&node, const int depth) {
 	if (depth >= max_depth) return;
 	if (samples.size() < node_sample_num_threshold) return;
 	
@@ -84,6 +87,8 @@ void RandomForest::split_node_recursively(vector<Sample*> &samples, vector<int> 
 	float best_split_point = 0.0f;
 	float min_variance = current_variance;
 	int min_index = -1;
+
+	// #pragma omp parallel for
 	for (int i = 0; i < features.size(); ++i) {
 		int feature = features[i];
 		if (feature == -1) continue;
@@ -104,7 +109,7 @@ void RandomForest::split_node_recursively(vector<Sample*> &samples, vector<int> 
 	Node *test = carts[0].root;
 	node->feature = features[min_index];
 	node->split_point = best_split_point;
-	sprintf_s(rf_log, "split node: feature=%d\tsplit_point=%f\tdepth=%d\tvariance: %f -> %f", features[min_index], best_split_point, depth+1, current_variance, min_variance); log(rf_log);
+	sprintf_s(rf_log, "CART #%d\tsplit node: feature=%d\tsplit_point=%f\tdepth=%d\tvariance: %f -> %f", cart_no, features[min_index], best_split_point, depth+1, current_variance, min_variance); log(rf_log);
 	
 	// split left and right nodes
 	vector<Sample*> l_samples, r_samples;
@@ -113,8 +118,8 @@ void RandomForest::split_node_recursively(vector<Sample*> &samples, vector<int> 
 		else r_samples.push_back(s);
 	}
 	features[min_index] = -1;
-	split_node_recursively(l_samples, features, node->left, depth + 1);
-	split_node_recursively(r_samples, features, node->right, depth + 1);
+	split_node_recursively(cart_no, l_samples, features, node->left, depth + 1);
+	split_node_recursively(cart_no, r_samples, features, node->right, depth + 1);
 	
 	// leaf node
 	if (node->is_leaf()) {
@@ -124,7 +129,7 @@ void RandomForest::split_node_recursively(vector<Sample*> &samples, vector<int> 
 	}
 }
 
-tuple<float, float> RandomForest::find_split(vector<Sample*> &samples, const int feature) {
+tuple<float, float> RandomForest::find_split(vector<Sample*> samples, const int feature) {
 	sort_on_feature(samples, feature);
 	int t = samples.size();
 	int p = 0;
@@ -154,9 +159,9 @@ tuple<float, float> RandomForest::find_split(vector<Sample*> &samples, const int
 	return make_tuple(best_split_point, min_variance);
 }
 
-CART RandomForest::generate_cart(vector<Sample*> &samples, vector<int> &features) {
+CART RandomForest::generate_cart(const int cart_no, vector<Sample*> &samples, vector<int> &features) {
 	CART cart;
-	split_node_recursively(samples, features, cart.root, 0);
+	split_node_recursively(cart_no, samples, features, cart.root, 0);
 	return cart;
 }
 
