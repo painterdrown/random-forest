@@ -101,7 +101,6 @@ void write_predict_data(const vector<float> &test_y, const char *path) {
 
 void shuffle(vector<int> &cards) {
 	srand(time(NULL));
-
 	int n = cards.size();
 	for (int i = 0; i < n; ++i) {
 		int index = rand() % (n - i) + i;
@@ -112,5 +111,4 @@ void shuffle(vector<int> &cards) {
 		}
 
 	}
-
 }

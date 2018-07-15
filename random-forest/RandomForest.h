@@ -45,7 +45,7 @@ private:
 	void split_node_recursively            // 递归地分裂节点
 		(const int cart_no, vector<Sample*> &samples, vector<int> &features, Node *&node, const int depth);
 	tuple<float, float> find_split         // 找到一组特征中的最佳分割点
-		(vector<Sample*> samples, const int feature);
+		(vector<Sample*> &samples, const int feature);
 	float compute_variance                 // 计算样本方差
 		(const vector<Sample*> &samples);
 	void sort_on_feature                   // 将样本基于某个特征进行排序

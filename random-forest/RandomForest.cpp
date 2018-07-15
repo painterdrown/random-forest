@@ -16,7 +16,7 @@ void RandomForest::train(const vector<Sample> &train_samples) {
 	// begin training CART
 	carts.resize(4);
 
-	omp_set_num_threads(8);
+	omp_set_num_threads(4);
 	#pragma omp parallel for
 	for (int i = 0; i < tree_num; ++i) {
 		sprintf_s(rf_log, "CART #%d begin to train in thread #%d", i + 1, omp_get_thread_num()); log(rf_log);
@@ -88,7 +88,6 @@ void RandomForest::split_node_recursively(const int cart_no, vector<Sample*> &sa
 	float min_variance = current_variance;
 	int min_index = -1;
 
-	// #pragma omp parallel for
 	for (int i = 0; i < features.size(); ++i) {
 		int feature = features[i];
 		if (feature == -1) continue;
@@ -129,7 +128,7 @@ void RandomForest::split_node_recursively(const int cart_no, vector<Sample*> &sa
 	}
 }
 
-tuple<float, float> RandomForest::find_split(vector<Sample*> samples, const int feature) {
+tuple<float, float> RandomForest::find_split(vector<Sample*> &samples, const int feature) {
 	sort_on_feature(samples, feature);
 	int t = samples.size();
 	int p = 0;
