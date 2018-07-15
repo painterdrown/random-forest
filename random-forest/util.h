@@ -14,7 +14,9 @@
 using namespace std;
 
 typedef vector<float> X;
+
 typedef bool Y;
+
 typedef struct {
 	X x;
 	Y y;
